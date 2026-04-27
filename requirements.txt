@@ -1,0 +1,4 @@
+Pillow
+nvidia-ml-py
+PyQt5
+pyinstaller
