@@ -32,6 +32,6 @@
 ## 如何打包成 .exe
 如果你修改了程式碼，想重新打包成獨立的執行檔，請在終端機輸入：
 ```bash
-pyinstaller -y --onefile --windowed --noconsole --add-data "takodachi-ina.gif;." tako_tray.py
+pyinstaller -y --onefile --windowed --noconsole --icon=icon.ico --add-data "takodachi-ina.gif;." tako_tray.py
 ```
 打包完成後的執行檔會產生在 `dist/` 資料夾內。
