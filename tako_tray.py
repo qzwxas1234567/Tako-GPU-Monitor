@@ -1,5 +1,6 @@
 import sys
 import os
+import winreg
 import pynvml
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QIcon, QPixmap, QImage
@@ -60,6 +61,12 @@ class TakoTray(QSystemTrayIcon):
 
         # Setup Menu
         menu = QMenu()
+        
+        self.autostart_action = QAction("開機自動執行", menu, checkable=True)
+        self.autostart_action.setChecked(self.check_autostart())
+        self.autostart_action.triggered.connect(self.toggle_autostart)
+        menu.addAction(self.autostart_action)
+        
         quit_action = QAction("Quit", menu)
         quit_action.triggered.connect(QApplication.instance().quit)
         menu.addAction(quit_action)
@@ -87,6 +94,39 @@ class TakoTray(QSystemTrayIcon):
         # Update timer interval dynamically
         if self.timer.interval() != delay:
             self.timer.setInterval(delay)
+
+    def get_exe_path(self):
+        if getattr(sys, 'frozen', False):
+            return sys.executable
+        return os.path.abspath(sys.argv[0])
+
+    def check_autostart(self):
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+        app_name = "TakoGPUMonitor"
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
+            value, _ = winreg.QueryValueEx(key, app_name)
+            winreg.CloseKey(key)
+            expected = f'"{self.get_exe_path()}"'
+            return value == expected or value == self.get_exe_path()
+        except Exception:
+            return False
+
+    def toggle_autostart(self, checked):
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+        app_name = "TakoGPUMonitor"
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_ALL_ACCESS)
+            if checked:
+                winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, f'"{self.get_exe_path()}"')
+            else:
+                try:
+                    winreg.DeleteValue(key, app_name)
+                except FileNotFoundError:
+                    pass
+            winreg.CloseKey(key)
+        except Exception as e:
+            print("Error modifying registry:", e)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
